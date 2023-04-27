@@ -112,7 +112,7 @@ async function main (): Promise<void> {
   const opts = program.parse().opts()
   const provider = getDefaultProvider(opts.network) as JsonRpcProvider
   let signer: Signer
-  const deployFactory: boolean = opts.deployFactory
+  const deployFactory: boolean = true
   let bundler: BundlerServer | undefined
   if (opts.selfBundler != null) {
     // todo: if node is geth, we need to fund our bundler's account:
@@ -155,7 +155,9 @@ async function main (): Promise<void> {
   const accountOwner = new Wallet('0x'.padEnd(66, '7'))
 
   const index = opts.nonce ?? Date.now()
-  const client = await new Runner(provider, opts.bundlerUrl, accountOwner, opts.entryPoint, index).init(deployFactory ? signer : undefined)
+  // const client = await new Runner(provider, opts.bundlerUrl, accountOwner, opts.entryPoint, index).init(deployFactory ? signer : undefined)
+  const r = new Runner(provider, opts.bundlerUrl, accountOwner, opts.entryPoint, index)
+  const client = await r.init(deployFactory ? signer : undefined)
 
   const addr = await client.getAddress()
 
@@ -173,10 +175,12 @@ async function main (): Promise<void> {
   const requiredBalance = parseEther('0.1')
   if (bal.lt(requiredBalance.div(2))) {
     console.log('funding account to', requiredBalance)
-    await signer.sendTransaction({
-      to: addr,
-      value: requiredBalance.sub(bal)
-    })
+    // await signer.sendTransaction({
+    //   to: addr,
+    //   value: requiredBalance.sub(bal)
+    // })
+    const fundTx = await signer.sendTransaction({ to: addr, value: requiredBalance.sub(bal) })
+    await fundTx.wait()
   } else {
     console.log('not funding account. balance is enough')
   }
